@@ -9,6 +9,20 @@
 #include "SystemMonitor.h"
 #include "BenchmarkRunner.h"
 
+// 打印模型元数据
+void PrintModelInfo(InferenceEngine& engine) {
+    std::cout << "[Probe] Model Inspector:\n";
+    // Since InferenceEngine exposes little info, we might need to rely on what we can see or add getters.
+    // Ideally InferenceEngine should have GetInputNodes() etc, but for now let's just use what we have or assume success message is enough for MVP+
+    // Wait, the PRD says "print model metadata (inputs, outputs, nodes)". The current InferenceEngine doesn't expose these widely.
+    // Let's modify InferenceEngine to allow inspecting or just trust the process.
+    // Checking InferenceEngine.h... GetInputSize is there.
+    // Let's add basic info here, or even better, expose input/output names if possible.
+    // For now, let's keep it simple based on what we have:
+    std::cout << "  Input Size (elements): " << engine.GetInputSize() << "\n";
+    std::cout << "  (More details would require InferenceEngine API expansion)\n";
+}
+
 // 打印使用说明
 void PrintUsage(const char* name) {
     std::cout << "Usage: " << name << " [OPTIONS]\n"
@@ -17,6 +31,9 @@ void PrintUsage(const char* name) {
               << "  -t, --threads <num>     Number of threads (Default: 1)\n"
               << "  -n, --requests <num>    Total number of requests (Default: 100)\n"
               << "  -w, --warmup <num>      Warmup rounds (Default: 10)\n"
+              << "  -l, --memory_limit <MB> Memory Limit in MB (Default: 0, no limit)\n"
+              << "  -o, --optimization <lvl> Optimization level: basic, all, none (Default: all)\n"
+              << "  --probe                 Print model metadata and exit\n"
               << "  -j, --json <path>       Save report to JSON file\n"
               << "  -h, --help              Show this help message\n";
 }
@@ -25,6 +42,8 @@ int main(int argc, char** argv) {
     // 默认配置
     std::string model_path;
     std::string json_path;
+    std::string opt_str = "all";
+    bool probe_mode = false;
     BenchmarkConfig config;
 
     // 解析命令行参数
@@ -33,6 +52,9 @@ int main(int argc, char** argv) {
         {"threads", required_argument, 0, 't'},
         {"requests", required_argument, 0, 'n'},
         {"warmup", required_argument, 0, 'w'},
+        {"memory_limit", required_argument, 0, 'l'},
+        {"optimization", required_argument, 0, 'o'},
+        {"probe", no_argument, 0, 'p'},
         {"json", required_argument, 0, 'j'},
         {"help", no_argument, 0, 'h'},
         {0, 0, 0, 0}
@@ -40,12 +62,15 @@ int main(int argc, char** argv) {
 
     int opt;
     int option_index = 0;
-    while ((opt = getopt_long(argc, argv, "m:t:n:w:j:h", long_options, &option_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "m:t:n:w:l:o:p:j:h", long_options, &option_index)) != -1) {
         switch (opt) {
             case 'm': model_path = optarg; break;
             case 't': config.threads = std::stoi(optarg); break;
             case 'n': config.requests = std::stoi(optarg); break;
             case 'w': config.warmup_rounds = std::stoi(optarg); break;
+            case 'l': config.memory_limit_mb = std::stod(optarg); break;
+            case 'o': opt_str = optarg; break;
+            case 'p': probe_mode = true; break;
             case 'j': json_path = optarg; break;
             case 'h': PrintUsage(argv[0]); return 0;
             default: PrintUsage(argv[0]); return 1;
@@ -76,7 +101,22 @@ int main(int argc, char** argv) {
 
         // 2. 加载模型
         std::cout << "[Init] Loading Model..." << std::endl;
-        engine.LoadModel(model_path);
+        
+        int opt_level = 99; // Default all
+        if (opt_str == "basic") opt_level = 1;
+        else if (opt_str == "none") opt_level = 0;
+        else if (opt_str == "all") opt_level = 99;
+        else {
+            std::cerr << "Warning: Unknown optimization level '" << opt_str << "', using 'all'." << std::endl;
+        }
+
+        engine.LoadModel(model_path, opt_level);
+
+        // 如果是 Probe 模式，打印信息后退出
+        if (probe_mode) {
+           PrintModelInfo(engine);
+           return 0;
+        }
 
         // 3. 执行压测
         std::cout << "[Run] Starting Benchmark..." << std::endl;

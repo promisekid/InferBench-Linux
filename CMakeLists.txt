@@ -59,6 +59,7 @@ enable_testing()
 add_executable(unit_tests 
     tests/test_main.cpp
     tests/test_monitor.cpp
+    tests/test_watchdog.cpp
     tests/test_inference.cpp
     tests/test_benchmark.cpp
     src/SystemMonitor.cpp

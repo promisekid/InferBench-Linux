@@ -80,3 +80,11 @@ double SystemMonitor::GetCpuUsage() {
     double usage = 100.0 * (1.0 - static_cast<double>(idle_delta) / static_cast<double>(total_delta));
     return usage < 0 ? 0 : usage;
 }
+
+bool SystemMonitor::CheckMemoryLimit(double limit_mb) {
+    if (limit_mb <= 0) {
+        return false; // 0 or negative means no limit
+    }
+    double current_usage = GetMemoryUsage();
+    return current_usage > limit_mb;
+}

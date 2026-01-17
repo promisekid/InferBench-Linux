@@ -12,6 +12,7 @@ struct BenchmarkConfig {
     int threads = 1;        ///< 并发线程数
     int requests = 100;     ///< 总请求数
     int warmup_rounds = 10; ///< 预热轮数（不计入统计）
+    double memory_limit_mb = 0.0; ///< 内存限制 (MB)，0 表示不限制
 };
 
 /**

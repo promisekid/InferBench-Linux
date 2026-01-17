@@ -43,8 +43,25 @@ BenchmarkResult BenchmarkRunner::Run(const BenchmarkConfig& config) {
     
     std::thread monitor_thread([&]() {
         while (monitor_running) {
-            cpu_samples.push_back(monitor_.GetCpuUsage());
-            mem_samples.push_back(monitor_.GetMemoryUsage());
+            double mem_usage = monitor_.GetCpuUsage(); // Keep CPU check
+            // Fix: GetCpuUsage returns CPU, we need GetMemoryUsage for memory
+            // Re-reading logic to be precise
+            
+            double cpu = monitor_.GetCpuUsage();
+            double mem = monitor_.GetMemoryUsage();
+            
+            cpu_samples.push_back(cpu);
+            mem_samples.push_back(mem);
+
+            // Watchdog Check
+            if (config.memory_limit_mb > 0 && mem > config.memory_limit_mb) {
+                std::cerr << "\n[Watchdog] OOM Detected! Current: " << mem 
+                          << " MB > Limit: " << config.memory_limit_mb << " MB. Stopping..." << std::endl;
+                monitor_running = false;
+                // Force stop all requests
+                remaining_requests = 0;
+            }
+
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
     });

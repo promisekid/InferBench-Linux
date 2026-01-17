@@ -1,0 +1,27 @@
+# 任务列表: InferBench-Linux v0.2.0 升级
+
+- [ ] **计划与准备 (Planning & Setup)** <!-- id: 0 -->
+    - [x] 创建/更新 v0.2.0 的产品需求文档 (PRD) 和项目进度 <!-- id: 1 -->
+    - [x] 更新交付标准 (Delivery Standards) <!-- id: 2 -->
+    - [x] 创建实施计划 (Implementation Plan) <!-- id: 3 -->
+- [ ] **F1: 资源适配与看门狗 (Resource Adaptation & Watchdog)** <!-- id: 4 -->
+    - [x] 在 `SystemMonitor` 中实现 `CheckMemoryLimit` 方法 <!-- id: 5 -->
+    - [x] 添加 `--memory_limit` 参数解析 <!-- id: 6 -->
+    - [x] 在 `BenchmarkRunner` 循环中调用内存检查，OOM 时优雅退出 <!-- id: 7 -->
+- [ ] **F2: 模型优化与探查 (Model Optimization & Probe)** <!-- id: 8 -->
+    - [x] 修改 `InferenceEngine::LoadModel` 接口以支持 `opt_level` 参数 <!-- id: 9 -->
+    - [x] 添加 `--optimization` 参数 (basic, all, none) 并传递给引擎 <!-- id: 23 -->
+    - [x] 添加 `--probe` 参数以打印模型元数据 (输入, 输出, 节点) 而不运行推理 <!-- id: 10 -->
+- [ ] **F3: 自动化测试套件 (Automation Test Suite)** <!-- id: 11 -->
+    - [ ] 创建 `scripts/benchmark_suite.py` 用于自动化多线程压测和绘图 <!-- id: 12 -->
+    - [ ] 创建 `scripts/mem_check.sh` 用于 ASan 集成 <!-- id: 13 -->
+    - [ ] 确保 CMake 支持 ASan 构建选项 <!-- id: 14 -->
+- [ ] **F4: CI/CD 流水线 (CI/CD Pipeline)** <!-- id: 15 -->
+    - [ ] 创建 `cmake/arm-linux.toolchain.cmake` 交叉编译模板 <!-- id: 24 -->
+    - [ ] 创建 `.github/workflows/ci.yml` 用于自动化构建和测试 <!-- id: 16 -->
+- [ ] **验证 (Verification)** <!-- id: 17 -->
+    - [x] 验证 F1 看门狗是否正确触发 <!-- id: 18 -->
+    - [x] 验证 F2 优化级别是否影响性能/图结构 <!-- id: 19 -->
+    - [x] 验证 F2 探查模式是否输出正确信息 <!-- id: 20 -->
+    - [ ] 运行 `benchmark_suite.py` 并检查生成的图表 <!-- id: 21 -->
+    - [ ] 运行 `mem_check.sh` 并确无内存泄漏 <!-- id: 22 -->

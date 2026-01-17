@@ -19,9 +19,10 @@ public:
      * @brief 加载 ONNX 模型。
      * 
      * @param model_path 模型文件的路径 (.onnx)。
+     * @param opt_level 优化级别 (0=Disable, 1=Basic, 99=All). Default: 99.
      * @throws std::runtime_error 如果加载失败。
      */
-    void LoadModel(const std::string& model_path);
+    void LoadModel(const std::string& model_path, int opt_level = 99);
 
     /**
      * @brief 执行推理。

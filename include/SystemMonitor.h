@@ -31,6 +31,15 @@ public:
      */
     double GetCpuUsage();
 
+    /**
+     * @brief 检查内存是否超过限制 (资源熔断)
+     * 
+     * @param limit_mb 内存限制阈值 (MB)
+     * @return true 如果当前 RSS 超过 limit_mb
+     * @return false 如果未超过或 limit_mb <= 0
+     */
+    bool CheckMemoryLimit(double limit_mb);
+
 private:
     // 记录上一次读取的 CPU 时间片总和
     int64_t last_total_cpu_time_ = 0;

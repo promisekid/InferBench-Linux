@@ -8,13 +8,21 @@
 2.  **稳定性测试**: 能够连续运行至少 1 小时而不崩溃，且不发生 OOM (Out of Memory)。
 3.  **精度要求 - 延迟**: 测量代码本身的耗时开销 (Overhead) 必须小于实际推理耗时的 1% (对于耗时 >5ms 的模型)。
 4.  **精度要求 - 监控**: CPU/内存的读数应与标准工具 (如 `top` 或 `htop`) 相比，误差在 ±5% 以内。
+5.  **资源熔断 (New)**: 当内存使用超过 `--memory_limit` 设定值时，程序应优雅退出并返回特定错误码，而非被系统 Kill。
+6.  **模型探查 (New)**: `--probe` 模式下应准确输出输入输出节点名称及维度信息，且不触发实际推理。
 
 ## 3. 交付物清单 (Deliverables)
 1.  **可执行文件**: 静态链接（或正确设置 RPATH）的二进制文件 `inferbench`。
-2.  **脚本**: 用于 MVP 自动化验证的 `run_test.sh` 脚本。
-3.  **测试报告**: 压测结果样例文件 (`benchmark_result.json`)。
+2.  **脚本**:
+    - `scripts/benchmark_suite.py`: 自动化压测与可视化脚本。
+    - `scripts/mem_check.sh`: 内存泄漏检测脚本。
+3.  **测试报告**:
+    - `benchmark_result.json`
+    - `latency.png`, `throughput.png` (由 Suite 生成)
 4.  **文档**: 完整的 `README.md`，包含编译指南和使用示例。
+5.  **CI 配置**: `.github/workflows/ci.yml` 配置文件。
 
 ## 4. 测试覆盖率 (Test Coverage)
 - **单元测试**: `SystemMonitor` 和 `Stats` 统计逻辑的测试覆盖率需 > 80%。
 - **集成测试**: 包含自动化脚本，跑通 Dummy 模型的全流程。
+- **内存安全**: 通过 ASan 检测无泄漏 (Zero Leaks)。

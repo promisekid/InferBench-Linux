@@ -18,9 +18,27 @@ InferenceEngine::~InferenceEngine() {
     }
 }
 
-void InferenceEngine::LoadModel(const std::string& model_path) {
+void InferenceEngine::LoadModel(const std::string& model_path, int opt_level) {
     Ort::SessionOptions session_options;
-    session_options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
+    
+    // Set Optimization Level
+    switch (opt_level) {
+        case 0:
+            session_options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_DISABLE_ALL);
+            break;
+        case 1:
+            session_options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_BASIC);
+            break;
+        case 2:
+            session_options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
+            break;
+        case 99:
+        default:
+            session_options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
+            break;
+    }
+
+    session_options.SetIntraOpNumThreads(1);
 
     try {
         session_ = std::make_unique<Ort::Session>(env_, model_path.c_str(), session_options);
