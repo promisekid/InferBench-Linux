@@ -1,0 +1,21 @@
+# Build directories
+build/
+bin/
+lib/
+
+# IDE settings
+.vscode/
+.idea/
+*.swp
+
+# Compiled Object files
+*.o
+*.obj
+
+# Dynamic Libraries
+*.so
+*.dylib
+*.dll
+
+# OS files
+.DS_Store
