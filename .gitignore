@@ -10,6 +10,7 @@ build_asan/
 *.json
 *.png
 output.txt
+third_party/
 
 # Compiled Object files
 *.o
