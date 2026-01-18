@@ -3,6 +3,8 @@
 #include "SystemMonitor.h"
 #include <vector>
 #include <cstring>
+#include <thread>
+#include <chrono>
 
 TEST(WatchdogTest, DetectsMemoryLimitExceeded) {
     SystemMonitor monitor;
@@ -23,9 +25,15 @@ TEST(WatchdogTest, DetectsMemoryLimitExceeded) {
     
     // Check if limit is exceeded
     // Note: RSS update might not be instantaneous in /proc, but usually fast enough for test
-    // We might need a small sleep in a real flaky environment, but let's try direct first.
-    
-    bool triggered = monitor.CheckMemoryLimit(limit);
+    // We add a retry loop to be robust against lazy OS accounting
+    bool triggered = false;
+    for (int i = 0; i < 20; ++i) {
+        if (monitor.CheckMemoryLimit(limit)) {
+            triggered = true;
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
     
     // Free memory
     free(ptr);

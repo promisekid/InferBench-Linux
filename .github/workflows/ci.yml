@@ -40,6 +40,8 @@ jobs:
 
     - name: Run Units Tests
       run: |
+        # Copy test resources to build directory so unit tests can find them
+        cp -r tests build/
         cd build
         ctest --output-on-failure
         
