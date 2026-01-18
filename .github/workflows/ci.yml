@@ -32,6 +32,12 @@ jobs:
     - name: Build
       run: cmake --build build
 
+    - name: Download Test Model
+      run: |
+        mkdir -p tests
+        # Download a lightweight SqueezeNet model and rename it to match the test expectation
+        wget -q https://github.com/onnx/models/raw/main/validated/vision/classification/squeezenet/model/squeezenet1.0-9.onnx -O tests/resnet50.onnx
+
     - name: Run Units Tests
       run: |
         cd build

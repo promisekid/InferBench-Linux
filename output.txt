@@ -1,172 +1,46 @@
-文件夹 'InferBench-Linux' 的层级结构:
-
-└── InferBench-Linux/
-    ├── Product_Requirements_Document.md
-    ├── Code_Quality_Standards.md
-    ├── Delivery_Standards.md
-    ├── CMakeLists.txt
-    ├── output.txt
-    ├── .gitignore
-    ├── Project_Schedule.md
-    └── include/
-        ├── InferenceEngine.h
-        ├── BenchmarkRunner.h
-        ├── SystemMonitor.h
-    └── tests/
-        ├── test_inference.cpp
-        ├── test_monitor.cpp
-        ├── test_main.cpp
-        ├── test_benchmark.cpp
-        ├── resnet50.onnx
-    └── scripts/
-        ├── setup_deps.sh
-    └── src/
-        ├── main.cpp
-        ├── test_ort.cpp
-        ├── SystemMonitor.cpp
-        ├── InferenceEngine.cpp
-        ├── BenchmarkRunner.cpp
-
-================================================================================
-
---- 文件开始: Product_Requirements_Document.md ---
-
-# 产品需求文档 (PRD): InferBench-Linux
-> **版本**: v0.1.0 (MVP)  
-> **日期**: 2026-01-17  
-> **状态**: 已批准  
-
-## 1. 项目背景
-### 1.1 痛点分析
-在 AI 算法落地过程中，除了模型精度，推理延迟 (Latency)、吞吐量 (QPS) 以及系统资源占用 (CPU/Memory) 是决定模型能否上线的关键指标。目前缺乏一个轻量级、无依赖、且能同时监控系统底层指标的 C++ 原生测试工具。
-
-### 1.2 项目目标
-开发一个运行在 Linux 终端的命令行工具 (CLI) `inferbench`，具备以下能力：
-- 加载通用的 ONNX 模型（避免引入 OpenCV 等复杂依赖）。
-- 进行多线程高并发推理压测。
-- 实时监控 Linux 系统级（整体 CPU）和进程级（当前进程内存）的资源消耗。
-- 输出标准化的性能测试报告 (JSON/CSV)。
-
-## 2. 技术架构
-### 2.1 技术栈
-- **核心语言**: C++17
-- **构建系统**: CMake
-- **推理后端**: ONNX Runtime (C++ API)
-- **并发模型**: `std::thread` + 线程池
-- **系统监控**: 直接读取 Linux `/proc` 文件系统 (无第三方依赖)
-- **单元测试**: Google Test (GTest)
-
-### 2.2 模块划分
-1.  **接入层 (Interface Layer)**: 负责解析命令行参数 (`--model`, `--threads` 等) 及流程控制。
-2.  **推理引擎 (InferenceEngine)**: 封装 ONNX Runtime 会话，负责模型加载和 Tensor 管理。
-3.  **压测核心 (BenchmarkRunner)**: 负责线程池管理、任务调度和延迟计算。
-4.  **监控模块 (SystemMonitor)**: 后台线程读取 `/proc/stat` 和 `/proc/self/stat`。
-5.  **数据层 (Data Layer)**: 负责统计数据聚合及报告生成。
-
-## 3. MVP 功能需求
-
-### 3.1 模型与数据
-- **模型加载**: 支持通过文件路径加载 `.onnx` 模型。
-- **数据输入**:
-    - 自动探测输入节点的名称和维度。
-    - 自动生成符合 Input Shape 的随机浮点张量 (Float32)。
-    - *约束*: MVP 阶段不引入图像处理库（如 OpenCV）。
-
-### 3.2 压测配置
-- **并发控制**: 支持配置线程数 (`-t/--threads`)。
-- **负载控制**: 
-    - 固定请求总数 (`-n/--requests`)。
-    - *优化项*: 支持预热轮数 (`--warmup`) 以稳定性能。
-
-### 3.3 系统监控
-- **采样频率**: 可配置（默认如 100ms）。
-- **监控指标**:
-    - **进程内存**: RSS (常驻内存集)。
-    - **系统 CPU**: 全局 CPU 使用率百分比。
-
-### 3.4 输出与报告
-- **交互体验**: 终端实时显示进度条。
-- **结果汇总**:
-    - 平均延迟 (Avg Latency)、P99 延迟。
-    - 吞吐量 (QPS)。
-    - 峰值内存 (Peak Memory RSS)。
-    - 平均 CPU 使用率。
-- **文件输出**: 标准化 JSON 和 CSV 报告。
-
-## 4. 工作流程
-1.  **用户** 启动工具: `./inferbench --model resnet50.onnx --threads 4 --requests 1000`
-2.  **工具** 初始化环境 (ONNX Env) -> 加载模型。
-3.  **工具** 执行预热 (Warmup, 可选)。
-4.  **工具** 启动监控线程 (Monitor Thread)。
-5.  **工具** 启动工作线程池 (Benchmark Work)。
-6.  **工具** 聚合结果 -> 打印到终端 -> 保存至文件。
+=== Project Structure ===
+./
+    Code_Quality_Standards.md
+    Delivery_Standards.md
+    CMakeLists.txt
+    .gitignore
+    task.md
+    README.md
+    Project_Schedule.md
+    implementation_plan.md
+    cmake/
+        arm-linux.toolchain.cmake
+    include/
+        InferenceEngine.h
+        BenchmarkRunner.h
+        SystemMonitor.h
+    tests/
+        test_inference.cpp
+        test_monitor.cpp
+        test_main.cpp
+        test_benchmark.cpp
+        test_watchdog.cpp
+        resnet50.onnx
+    .github/
+        workflows/
+            ci.yml
+    scripts/
+        setup_deps.sh
+        mem_check.sh
+        benchmark_suite.py
+    src/
+        main.cpp
+        test_ort.cpp
+        SystemMonitor.cpp
+        InferenceEngine.cpp
+        BenchmarkRunner.cpp
 
 
---- 文件结束: Product_Requirements_Document.md ---
+=== Core Source Code Contents ===
 
---- 文件开始: Code_Quality_Standards.md ---
-
-# 代码质量指标 (Code Quality Standards)
-
-## 1. 代码规范 (Style)
-- **风格指南**: 遵循 [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html)。
-  - 类名: `PascalCase`
-  - 函数名: `PascalCase`
-  - 变量名: `snake_case`
-  - 私有成员变量: `snake_case_` (带尾部下划线)
-  - 缩进: 2 或 4 空格 (保持一致)
-- **格式化**: 建议使用 `.clang-format` 进行自动格式化。
-
-## 2. 文档注释 (Documentation)
-- **公共 API**: 所有 `public` 的类、结构体、方法必须包含 Doxygen 风格的中文注释。
-- **格式要求**:
-  - `/** ... */` 块注释。
-  - 使用 `@brief` 简述功能。
-  - 使用 `@param` 描述参数。
-  - 使用 `@return` 描述返回值。
-  - 复杂逻辑需在实现代码中添加行内注释 `//`.
-
-## 3. 内存安全 (Memory Safety)
-- **零泄漏**: 必须通过动态分析工具验证。
-- **工具**: 
-  - CI/CD 流程中需开启 AddressSanitizer (`-fsanitize=address`)。
-  - 或使用 Valgrind Memcheck 运行测试。
-
-## 4. 并发安全 (Concurrency)
-- **线程安全**: 多线程共享的可变状态必须加锁 (`std::mutex`, `std::atomic`)。
-- **无死锁**: 避免在持锁期间调用外部未知回调，遵循锁顺。
-
-
---- 文件结束: Code_Quality_Standards.md ---
-
---- 文件开始: Delivery_Standards.md ---
-
-# 交付标准: InferBench-Linux
-
-## 1. 代码质量指标 (Code Quality)
-> 详见单独文档: [Code_Quality_Standards.md](./Code_Quality_Standards.md)
-
-## 2. 功能验收标准 (Acceptance Criteria)
-1.  **加载测试**: 能够成功加载标准的 ONNX 模型 (如 ResNet50, YOLOv5, BERT-tiny)。
-2.  **稳定性测试**: 能够连续运行至少 1 小时而不崩溃，且不发生 OOM (Out of Memory)。
-3.  **精度要求 - 延迟**: 测量代码本身的耗时开销 (Overhead) 必须小于实际推理耗时的 1% (对于耗时 >5ms 的模型)。
-4.  **精度要求 - 监控**: CPU/内存的读数应与标准工具 (如 `top` 或 `htop`) 相比，误差在 ±5% 以内。
-
-## 3. 交付物清单 (Deliverables)
-1.  **可执行文件**: 静态链接（或正确设置 RPATH）的二进制文件 `inferbench`。
-2.  **脚本**: 用于 MVP 自动化验证的 `run_test.sh` 脚本。
-3.  **测试报告**: 压测结果样例文件 (`benchmark_result.json`)。
-4.  **文档**: 完整的 `README.md`，包含编译指南和使用示例。
-
-## 4. 测试覆盖率 (Test Coverage)
-- **单元测试**: `SystemMonitor` 和 `Stats` 统计逻辑的测试覆盖率需 > 80%。
-- **集成测试**: 包含自动化脚本，跑通 Dummy 模型的全流程。
-
-
---- 文件结束: Delivery_Standards.md ---
-
---- 文件开始: CMakeLists.txt ---
-
+==================================================
+File: CMakeLists.txt
+==================================================
 # 指定 CMake 的最低版本要求
 cmake_minimum_required(VERSION 3.10)
 
@@ -178,6 +52,15 @@ project(InferBench-Linux VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 # 强制要求编译器支持所选的 C++ 标准
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# --- AddressSanitizer (ASan) Configuration ---
+option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
+if(ENABLE_ASAN)
+    message(STATUS "AddressSanitizer Enabled")
+    add_compile_options(-fsanitize=address -fno-omit-frame-pointer -g)
+    add_link_options(-fsanitize=address)
+endif()
+# ---------------------------------------------
 
 # 设置编译产物的输出目录
 # 设置静态库（.a）的输出目录
@@ -206,7 +89,6 @@ FetchContent_MakeAvailable(googletest)
 # -----------------------------
 
 # 查找所有源文件 
-# file(GLOB...) 在工程变大时不是最佳实践，但 MVP 阶段为了方便先保留，或者手动列出
 set(SOURCES
     src/test_ort.cpp
     src/SystemMonitor.cpp
@@ -228,6 +110,7 @@ enable_testing()
 add_executable(unit_tests 
     tests/test_main.cpp
     tests/test_monitor.cpp
+    tests/test_watchdog.cpp
     tests/test_inference.cpp
     tests/test_benchmark.cpp
     src/SystemMonitor.cpp
@@ -240,460 +123,9 @@ include(GoogleTest)
 gtest_discover_tests(unit_tests)
 
 
---- 文件结束: CMakeLists.txt ---
-
---- 文件开始: output.txt ---
-
-
-
---- 文件结束: output.txt ---
-
---- 文件开始: Project_Schedule.md ---
-
-# 项目进度与路线图: InferBench-Linux
-
-## 第一阶段: MVP 开发 (第一周)
-**目标**: 实现核心功能并完成基础 CLI 开发。
-
-### 📅 里程碑分解
-- [x] **M1: 项目搭建 (Project Setup)**
-    - [x] 建立 CMake 项目结构
-    - [x] Git 初始化与忽略文件配置
-    - [x] 依赖配置 (引入 ONNX Runtime, GTest)
-- [x] **M2: 系统监控模块 (System Monitor)**
-    - [x] 实现 `SystemMonitor` 类
-    - [x] 实现 `/proc/stat` 解析 (CPU)
-    - [x] 实现 `/proc/self/stat` 解析 (Memory)
-- [x] **M3: 推理引擎 (Inference Engine)**
-    - [x] 封装 `Ort::Session`
-    - [x] 实现 `LoadModel` 接口
-    - [x] 实现随机 Tensor 生成器
-    - [x] 实现 `Run` 推理接口
-- [x] **M4: 压测核心 (Benchmark Core)**
-    - [x] 实现线程池逻辑
-    - [x] 实现 `BenchmarkRunner` 调度器
-    - [x] 实现高精度计时与延迟统计
-- [x] **M5: CLI 与集成 (Integration)**
-    - [x] 命令行参数解析
-    - [x] 模块组装与联调
-    - [x] 终端进度条实现
-    - [x] 报告输出逻辑
-- [ ] **M6: MVP 验证 (Verification)**
-    - [ ] ResNet50/MobileNet 跑通测试
-    - [ ] 内存泄漏检查 (Valgrind)
-
-## 第二阶段: 优化与健壮性 (第二周)
-**目标**: 提升稳定性，支持更多场景，增强易用性。
-
-- [ ] **报告增强**: 支持详细的直方图统计，ASCII 格式的延迟分布图。
-- [ ] **真实数据支持**: 支持加载外部数据文件 (.bin/.npy) 而非仅随机数据。
-- [ ] **性能分析**: 集成简单的 Profiling 功能 (区分 前处理/推理/后处理 耗时)。
-
-## 第三阶段: 高级特性 (未来规划)
-- [ ] **GPU 支持**: 启用 CUDA/TensorRT Execution Providers。
-- [ ] **服务端模式**: 暴露 HTTP/gRPC 接口，支持远程触发压测。
-
-
---- 文件结束: Project_Schedule.md ---
-
---- 文件开始: include\InferenceEngine.h ---
-
-#pragma once
-
-#include <string>
-#include <vector>
-#include <memory>
-#include <onnxruntime_cxx_api.h>
-
-/**
- * @brief 推理引擎类，封装 ONNX Runtime 的核心功能。
- * 
- * 负责模型的加载、Tensor 内存管理以及执行推理。
- */
-class InferenceEngine {
-public:
-    InferenceEngine();
-    ~InferenceEngine();
-
-    /**
-     * @brief 加载 ONNX 模型。
-     * 
-     * @param model_path 模型文件的路径 (.onnx)。
-     * @throws std::runtime_error 如果加载失败。
-     */
-    void LoadModel(const std::string& model_path);
-
-    /**
-     * @brief 执行推理。
-     * 
-     * @param input_data 输入数据（展平的 float 数组）。
-     * @return std::vector<float> 推理结果（展平的 float 数组）。
-     */
-    std::vector<float> Run(const std::vector<float>& input_data);
-
-    /**
-     * @brief 获取模型需要的输入 Tensor 元素总数。
-     * 
-     * 用于生成符合大小的随机测试数据。
-     * 
-     * @return int64_t 元素个数 (如 1x3x224x224 = 150528)。
-     */
-    int64_t GetInputSize() const;
-
-private:
-    // ONNX Runtime 环境，整个进程通常只需要一个
-    Ort::Env env_;
-    // 会话对象，非线程安全（但在 Run 时只读模型是安全的，如果包含状态则需注意）
-    // 为了更安全的并发，通常 session 是线程安全的，但 session options 不是。
-    std::unique_ptr<Ort::Session> session_;
-    
-    // 模型的元数据 (Metadata)
-    std::vector<const char*> input_node_names_;
-    std::vector<const char*> output_node_names_;
-    std::vector<int64_t> input_node_dims_;
-    size_t input_tensor_size_ = 0;
-};
-
-
---- 文件结束: include\InferenceEngine.h ---
-
---- 文件开始: include\BenchmarkRunner.h ---
-
-#pragma once
-
-#include "InferenceEngine.h"
-#include "SystemMonitor.h"
-#include <vector>
-#include <cstdint>
-
-/**
- * @brief 压测配置参数
- */
-struct BenchmarkConfig {
-    int threads = 1;        ///< 并发线程数
-    int requests = 100;     ///< 总请求数
-    int warmup_rounds = 10; ///< 预热轮数（不计入统计）
-};
-
-/**
- * @brief 压测结果统计
- */
-struct BenchmarkResult {
-    double qps = 0.0;            ///< 吞吐量 (Queries Per Second)
-    double avg_latency_ms = 0.0; ///< 平均延迟 (毫秒)
-    double p99_latency_ms = 0.0; ///< P99 延迟 (毫秒)
-    double avg_cpu_usage = 0.0;  ///< 平均 CPU 使用率 (%)
-    double peak_memory_mb = 0.0; ///< 峰值内存占用 (MB)
-};
-
-/**
- * @brief 压测核心调度器
- * 
- * 负责管理线程池、分发推理任务、收集性能数据以及控制系统监控。
- * 采用“抢单模式”进行负载均衡。
- */
-class BenchmarkRunner {
-public:
-    /**
-     * @brief 构造函数
-     * 
-     * @param engine 依赖的推理引擎 (引用，生命周期需长于 Runner)
-     * @param monitor 依赖的系统监控器 (引用，生命周期需长于 Runner)
-     */
-    BenchmarkRunner(InferenceEngine& engine, SystemMonitor& monitor);
-    ~BenchmarkRunner() = default;
-
-    /**
-     * @brief 执行压测
-     * 
-     * 此函数是阻塞的，直到所有请求完成。
-     * 
-     * @param config 压测配置
-     * @return BenchmarkResult 最终统计结果
-     */
-    BenchmarkResult Run(const BenchmarkConfig& config);
-
-private:
-    InferenceEngine& engine_;
-    SystemMonitor& monitor_;
-
-    /**
-     * @brief 计算延迟的百分位数
-     * 
-     * @param latencies 所有样本数据
-     * @param percentile 百分位 (e.g. 0.99)
-     * @return double 对应的延迟值
-     */
-    double CalculatePercentile(std::vector<double>& latencies, double percentile);
-};
-
-
---- 文件结束: include\BenchmarkRunner.h ---
-
---- 文件开始: include\SystemMonitor.h ---
-
-#pragma once
-
-#include <string>
-#include <cstdint>
-#include <mutex>
-
-/**
- * @brief 负责监控系统资源（CPU 和 内存）
- * 
- * 这是一个工具类，直接读取 Linux 的 /proc 文件系统。
- */
-class SystemMonitor {
-public:
-    SystemMonitor() = default;
-    ~SystemMonitor() = default;
-
-    /**
-     * @brief 获取当前进程的物理内存占用 (RSS)
-     * @return 占用内存大小，单位：MB
-     */
-    double GetMemoryUsage();
-
-    /**
-     * @brief 获取系统的整体 CPU 使用率
-     * 
-     * 注意：这是一个瞬时值计算。
-     * 由于 /proc/stat 存储的是累加值，我们需要维护上一次的读数，
-     * 计算 (Current - Last) 的差值来得出这段时间内的使用率。
-     * 
-     * @return CPU 使用率百分比 (0.0 - 100.0)
-     */
-    double GetCpuUsage();
-
-private:
-    // 记录上一次读取的 CPU 时间片总和
-    int64_t last_total_cpu_time_ = 0;
-    // 记录上一次读取的 CPU 空闲时间
-    int64_t last_idle_cpu_time_ = 0;
-    // 互斥锁，保证多线程访问安全
-    std::mutex mutex_;
-};
-
-
---- 文件结束: include\SystemMonitor.h ---
-
---- 文件开始: tests\test_inference.cpp ---
-
-#include <gtest/gtest.h>
-#include "InferenceEngine.h"
-#include <numeric>
-#include <vector>
-#include <random>
-#include <fstream>
-
-TEST(InferenceEngineTest, LoadModelThrowsOnMissingFile) {
-    InferenceEngine engine;
-    EXPECT_THROW(engine.LoadModel("non_existent_model.onnx"), std::runtime_error);
-}
-
-TEST(InferenceEngineTest, CanRunResNet50) {
-    InferenceEngine engine;
-    
-    // 尝试加载刚刚下载的模型
-    // 注意：如果网络问题导致下载失败，这个测试会 fail。
-    // 在真实 CI 中应该 mock 或者保证文件存在。
-    std::string model_path = "tests/resnet50.onnx";
-    std::ifstream f(model_path.c_str());
-    if (!f.good()) {
-        GTEST_SKIP() << "Skipping test: resnet50.onnx not found";
-    }
-
-    ASSERT_NO_THROW(engine.LoadModel(model_path));
-
-    // 获取输入大小 (ResNet50 -> 1x3x224x224 = 150528)
-    int64_t input_size = engine.GetInputSize();
-    EXPECT_GT(input_size, 0);
-
-    // 生成随机数据
-    std::vector<float> input_data(input_size);
-    std::mt19937 gen(42);
-    std::uniform_real_distribution<float> dist(0.0f, 1.0f);
-    for(auto& val : input_data) val = dist(gen);
-
-    // 执行推理
-    std::vector<float> output;
-    ASSERT_NO_THROW(output = engine.Run(input_data));
-
-    // 验证输出 (ResNet50 ImageNet 1000 classes)
-    EXPECT_EQ(output.size(), 1000);
-    
-    // 简单的数值检查
-    float sum = std::accumulate(output.begin(), output.end(), 0.0f);
-    EXPECT_FALSE(std::isnan(sum));
-}
-
-
---- 文件结束: tests\test_inference.cpp ---
-
---- 文件开始: tests\test_monitor.cpp ---
-
-#include <gtest/gtest.h>
-#include "SystemMonitor.h"
-#include <thread>
-#include <vector>
-#include <cmath>
-
-// 辅助函数：在测试中制造一些 CPU 负载
-void burn_cpu(int ms) {
-    auto start = std::chrono::high_resolution_clock::now();
-    while (std::chrono::duration_cast<std::chrono::milliseconds>(
-               std::chrono::high_resolution_clock::now() - start).count() < ms) {
-        // 空循环
-        double x = 0.0;
-        for(int i=0; i<1000; ++i) x += std::sin(i);
-    }
-}
-
-// 辅助函数：制造内存负载
-void burn_memory(std::vector<char>& buffer, size_t size_mb) {
-    buffer.resize(size_mb * 1024 * 1024, 1); // 分配内存并填入数据
-}
-
-TEST(SystemMonitorTest, MemoryUsageIsReasonable) {
-    SystemMonitor monitor;
-    
-    // 1. 初始读数应该大于 0
-    double initial_mem = monitor.GetMemoryUsage();
-    EXPECT_GT(initial_mem, 0.0);
-    std::cout << "[Info] Initial Memory: " << initial_mem << " MB" << std::endl;
-
-    // 2. 分配 50MB 内存
-    std::vector<char> dummy;
-    burn_memory(dummy, 50);
-
-    // 3. 再次读取，应该增加了约 50MB
-    double after_mem = monitor.GetMemoryUsage();
-    EXPECT_GT(after_mem, initial_mem + 40.0); // 留一些 buffer，系统可能分配多于请求
-    std::cout << "[Info] After Alloc 50MB: " << after_mem << " MB" << std::endl;
-}
-
-TEST(SystemMonitorTest, CpuUsageIsDynamic) {
-    SystemMonitor monitor;
-
-    // 第一次调用通常返回 0 或不准确，用来初始化基准
-    double v1 = monitor.GetCpuUsage();
-    
-    // 睡 200ms
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-
-    // 第二次调用，应该反映休息时的情况（接近 0，但不一定是 0，可能有后台进程）
-    double v2 = monitor.GetCpuUsage();
-    std::cout << "[Info] Idle CPU Usage: " << v2 << "%" << std::endl;
-    EXPECT_GE(v2, 0.0);
-    EXPECT_LE(v2, 100.0);
-}
-
-
---- 文件结束: tests\test_monitor.cpp ---
-
---- 文件开始: tests\test_main.cpp ---
-
-#include <gtest/gtest.h>
-
-TEST(EnvironmentTest, GTestLinkage) {
-    EXPECT_EQ(1 + 1, 2);
-}
-
-
---- 文件结束: tests\test_main.cpp ---
-
---- 文件开始: tests\test_benchmark.cpp ---
-
-#include <gtest/gtest.h>
-#include "BenchmarkRunner.h"
-#include <iostream>
-#include <fstream>
-
-// 这个测试会真正跑起来，虽然是用随机数据。
-// 它验证了所有模块的协同工作。
-TEST(BenchmarkRunnerTest, Integration) {
-    // 1. 准备依赖
-    SystemMonitor monitor;
-    InferenceEngine engine;
-    
-    // 尝试加载 ResNet50 (如果存在)
-    std::string model_path = "tests/resnet50.onnx";
-    std::ifstream f(model_path.c_str());
-    if (!f.good()) {
-        GTEST_SKIP() << "Skipping integration test: model not found";
-    }
-    
-    ASSERT_NO_THROW(engine.LoadModel(model_path));
-
-    // 2. 配置压测
-    BenchmarkConfig config;
-    config.threads = 4;
-    config.requests = 20; // 跑 20 次意思一下
-    config.warmup_rounds = 2; // 热身 2 次
-
-    // 3. 运行
-    BenchmarkRunner runner(engine, monitor);
-    BenchmarkResult result = runner.Run(config);
-
-    // 4. 验证结果合理性
-    std::cout << "Integration Test Results:" << std::endl;
-    std::cout << "QPS: " << result.qps << std::endl;
-    std::cout << "Avg Latency: " << result.avg_latency_ms << " ms" << std::endl;
-    std::cout << "Avg CPU: " << result.avg_cpu_usage << "%" << std::endl;
-    std::cout << "Peak Mem: " << result.peak_memory_mb << " MB" << std::endl;
-
-    EXPECT_GT(result.qps, 0.0);
-    EXPECT_GT(result.avg_latency_ms, 0.0);
-    // 注意：在短测试里，CPU 采样可能会错过峰值或为 0，所以很难断言 > 0，但不应崩坏
-    EXPECT_GE(result.peak_memory_mb, 0.0);
-}
-
-
---- 文件结束: tests\test_benchmark.cpp ---
-
---- 文件开始: scripts\setup_deps.sh ---
-
-#!/bin/bash
-set -e
-
-# 定义版本和下载链接
-ORT_VERSION="1.16.3"
-ORT_FILE="onnxruntime-linux-x64-${ORT_VERSION}.tgz"
-ORT_URL="https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VERSION}/${ORT_FILE}"
-
-#以此脚本所在目录为基准，找到项目根目录
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-PROJECT_ROOT="${SCRIPT_DIR}/.."
-THIRD_PARTY_DIR="${PROJECT_ROOT}/third_party"
-
-mkdir -p "${THIRD_PARTY_DIR}"
-
-# 检查是否已经存在
-if [ -d "${THIRD_PARTY_DIR}/onnxruntime-linux-x64-${ORT_VERSION}" ]; then
-    echo "ONNX Runtime ${ORT_VERSION} already exists."
-    exit 0
-fi
-
-echo "Downloading ONNX Runtime ${ORT_VERSION}..."
-wget -q --show-progress "${ORT_URL}" -O "${THIRD_PARTY_DIR}/${ORT_FILE}"
-
-echo "Extracting..."
-tar -xzf "${THIRD_PARTY_DIR}/${ORT_FILE}" -C "${THIRD_PARTY_DIR}"
-
-# 清理压缩包
-rm "${THIRD_PARTY_DIR}/${ORT_FILE}"
-
-# 创建一个符号链接方便引用 (onnxruntime -> onnxruntime-linux-x64-1.16.3)
-# 这样以后升级版本只需要改链接，不用改 CMakeLists.txt
-ln -sfn "${THIRD_PARTY_DIR}/onnxruntime-linux-x64-${ORT_VERSION}" "${THIRD_PARTY_DIR}/onnxruntime"
-
-echo "Success! ONNX Runtime is installed in ${THIRD_PARTY_DIR}/onnxruntime"
-
-
---- 文件结束: scripts\setup_deps.sh ---
-
---- 文件开始: src\main.cpp ---
-
+==================================================
+File: src/main.cpp
+==================================================
 #include <iostream>
 #include <string>
 #include <vector>
@@ -705,6 +137,14 @@ echo "Success! ONNX Runtime is installed in ${THIRD_PARTY_DIR}/onnxruntime"
 #include "SystemMonitor.h"
 #include "BenchmarkRunner.h"
 
+// 打印模型元数据
+void PrintModelInfo(InferenceEngine& engine) {
+    std::cout << "[Probe] Model Inspector:\n";
+    // 打印输入 Tensor 的基本信息
+    std::cout << "  Input Size (elements): " << engine.GetInputSize() << "\n";
+    std::cout << "  (More details would require InferenceEngine API expansion)\n";
+}
+
 // 打印使用说明
 void PrintUsage(const char* name) {
     std::cout << "Usage: " << name << " [OPTIONS]\n"
@@ -713,6 +153,9 @@ void PrintUsage(const char* name) {
               << "  -t, --threads <num>     Number of threads (Default: 1)\n"
               << "  -n, --requests <num>    Total number of requests (Default: 100)\n"
               << "  -w, --warmup <num>      Warmup rounds (Default: 10)\n"
+              << "  -l, --memory_limit <MB> Memory Limit in MB (Default: 0, no limit)\n"
+              << "  -o, --optimization <lvl> Optimization level: basic, all, none (Default: all)\n"
+              << "  --probe                 Print model metadata and exit\n"
               << "  -j, --json <path>       Save report to JSON file\n"
               << "  -h, --help              Show this help message\n";
 }
@@ -721,6 +164,8 @@ int main(int argc, char** argv) {
     // 默认配置
     std::string model_path;
     std::string json_path;
+    std::string opt_str = "all";
+    bool probe_mode = false;
     BenchmarkConfig config;
 
     // 解析命令行参数
@@ -729,6 +174,9 @@ int main(int argc, char** argv) {
         {"threads", required_argument, 0, 't'},
         {"requests", required_argument, 0, 'n'},
         {"warmup", required_argument, 0, 'w'},
+        {"memory_limit", required_argument, 0, 'l'},
+        {"optimization", required_argument, 0, 'o'},
+        {"probe", no_argument, 0, 'p'},
         {"json", required_argument, 0, 'j'},
         {"help", no_argument, 0, 'h'},
         {0, 0, 0, 0}
@@ -736,12 +184,15 @@ int main(int argc, char** argv) {
 
     int opt;
     int option_index = 0;
-    while ((opt = getopt_long(argc, argv, "m:t:n:w:j:h", long_options, &option_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "m:t:n:w:l:o:p:j:h", long_options, &option_index)) != -1) {
         switch (opt) {
             case 'm': model_path = optarg; break;
             case 't': config.threads = std::stoi(optarg); break;
             case 'n': config.requests = std::stoi(optarg); break;
             case 'w': config.warmup_rounds = std::stoi(optarg); break;
+            case 'l': config.memory_limit_mb = std::stod(optarg); break;
+            case 'o': opt_str = optarg; break;
+            case 'p': probe_mode = true; break;
             case 'j': json_path = optarg; break;
             case 'h': PrintUsage(argv[0]); return 0;
             default: PrintUsage(argv[0]); return 1;
@@ -772,7 +223,22 @@ int main(int argc, char** argv) {
 
         // 2. 加载模型
         std::cout << "[Init] Loading Model..." << std::endl;
-        engine.LoadModel(model_path);
+        
+        int opt_level = 99; // Default all
+        if (opt_str == "basic") opt_level = 1;
+        else if (opt_str == "none") opt_level = 0;
+        else if (opt_str == "all") opt_level = 99;
+        else {
+            std::cerr << "Warning: Unknown optimization level '" << opt_str << "', using 'all'." << std::endl;
+        }
+
+        engine.LoadModel(model_path, opt_level);
+
+        // 如果是 Probe 模式，打印信息后退出
+        if (probe_mode) {
+           PrintModelInfo(engine);
+           return 0;
+        }
 
         // 3. 执行压测
         std::cout << "[Run] Starting Benchmark..." << std::endl;
@@ -824,111 +290,9 @@ int main(int argc, char** argv) {
 }
 
 
---- 文件结束: src\main.cpp ---
-
---- 文件开始: src\test_ort.cpp ---
-
-#include <iostream>
-#include <onnxruntime_cxx_api.h>
-
-int main() {
-    std::cout << "ONNX Runtime Version: " << Ort::GetVersionString() << std::endl;
-    return 0;
-}
-
-
---- 文件结束: src\test_ort.cpp ---
-
---- 文件开始: src\SystemMonitor.cpp ---
-
-#include "SystemMonitor.h"
-#include <fstream>
-#include <sstream>
-#include <iostream>
-#include <unistd.h>
-
-double SystemMonitor::GetMemoryUsage() {
-    // 打开当前进程的状态文件 /proc/self/stat
-    std::ifstream stat_file("/proc/self/stat");
-    if (!stat_file.is_open()) {
-        return 0.0;
-    }
-
-    std::string field;
-    // /proc/[pid]/stat 文件中第 24 个字段是 rss (Resident Set Size)
-    // 它表示进程当前占用的物理内存页数。我们需要跳过前 23 个字段。
-    for (int i = 0; i < 24; ++i) {
-        if (!(stat_file >> field)) {
-            return 0.0;
-        }
-    }
-
-    // 将第 24 个字段（rss 页数）转换为长整型
-    long rss = std::stol(field);
-    // 获取系统的内存页大小（通过 sysconf 获取，通常为 4096 字节）
-    long page_size = sysconf(_SC_PAGESIZE);
-    
-    // 计算总内存使用量（字节）并转换为 MB
-    // 计算公式：(页数 * 每页字节数) / (1024 * 1024)
-    return (static_cast<double>(rss) * page_size) / (1024.0 * 1024.0);
-}
-
-double SystemMonitor::GetCpuUsage() {
-    // 加锁，防止多线程同时修改 last_total_cpu_time_ 等状态
-    std::lock_guard<std::mutex> lock(mutex_);
-
-    // 1. 打开 /proc/stat 文件，这是全局 CPU 状态
-    std::ifstream stat_file("/proc/stat");
-    if (!stat_file.is_open()) {
-        return 0.0;
-    }
-
-    std::string line;
-    std::getline(stat_file, line); // 读取第一行，通常以 "cpu " 开头，代表总 CPU
-
-    std::istringstream iss(line);
-    std::string cpu_label;
-    iss >> cpu_label; // 跳过 "cpu" 字符串
-
-    // 2. 读取各个时间片数据
-    // Linux 内核文档定义了这些字段顺序：user, nice, system, idle, iowait, irq, softirq, steal, guest, guest_nice
-    int64_t user, nice, system, idle, iowait, irq, softirq, steal;
-    
-    // 只读取前 8 个字段通常足够计算
-    if (!(iss >> user >> nice >> system >> idle >> iowait >> irq >> softirq >> steal)) {
-        return 0.0;
-    }
-
-    // 3. 计算 Total 和 Idle
-    // Idle 时间 = idle + iowait
-    // Total 时间 = user + nice + system + idle + iowait + irq + softirq + steal
-    int64_t current_idle = idle + iowait;
-    int64_t current_total = user + nice + system + idle + iowait + irq + softirq + steal;
-
-    // 4. 计算与上一次读数的差值 (Delta)
-    int64_t total_delta = current_total - last_total_cpu_time_;
-    int64_t idle_delta = current_idle - last_idle_cpu_time_;
-
-    // 5. 更新状态以备下次使用
-    last_total_cpu_time_ = current_total;
-    last_idle_cpu_time_ = current_idle;
-
-    // 防止除以零（通常也是处理第一次运行的情况）
-    if (total_delta <= 0) {
-        return 0.0;
-    }
-
-    // 6. 计算使用率
-    // 这里的逻辑反向思考：使用率 = 1.0 - 空闲率
-    double usage = 100.0 * (1.0 - static_cast<double>(idle_delta) / static_cast<double>(total_delta));
-    return usage < 0 ? 0 : usage;
-}
-
-
---- 文件结束: src\SystemMonitor.cpp ---
-
---- 文件开始: src\InferenceEngine.cpp ---
-
+==================================================
+File: src/InferenceEngine.cpp
+==================================================
 #include "InferenceEngine.h"
 #include <iostream>
 #include <numeric>
@@ -949,9 +313,27 @@ InferenceEngine::~InferenceEngine() {
     }
 }
 
-void InferenceEngine::LoadModel(const std::string& model_path) {
+void InferenceEngine::LoadModel(const std::string& model_path, int opt_level) {
     Ort::SessionOptions session_options;
-    session_options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
+    
+    // Set Optimization Level
+    switch (opt_level) {
+        case 0:
+            session_options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_DISABLE_ALL);
+            break;
+        case 1:
+            session_options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_BASIC);
+            break;
+        case 2:
+            session_options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
+            break;
+        case 99:
+        default:
+            session_options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
+            break;
+    }
+
+    session_options.SetIntraOpNumThreads(1);
 
     try {
         session_ = std::make_unique<Ort::Session>(env_, model_path.c_str(), session_options);
@@ -1030,10 +412,9 @@ int64_t InferenceEngine::GetInputSize() const {
 }
 
 
---- 文件结束: src\InferenceEngine.cpp ---
-
---- 文件开始: src\BenchmarkRunner.cpp ---
-
+==================================================
+File: src/BenchmarkRunner.cpp
+==================================================
 #include "BenchmarkRunner.h"
 #include <algorithm>
 #include <atomic>
@@ -1069,7 +450,6 @@ BenchmarkResult BenchmarkRunner::Run(const BenchmarkConfig& config) {
     std::mutex stats_mutex; // 仅用于最后合并数据
     
     // Per-thread statistics to avoid lock verify
-    // 这种做法叫 TLS (Thread Local Storage) 思想的手动实现
     std::vector<std::vector<double>> all_thread_latencies(config.threads);
 
     // 4. 启动系统监控线程
@@ -1079,8 +459,23 @@ BenchmarkResult BenchmarkRunner::Run(const BenchmarkConfig& config) {
     
     std::thread monitor_thread([&]() {
         while (monitor_running) {
-            cpu_samples.push_back(monitor_.GetCpuUsage());
-            mem_samples.push_back(monitor_.GetMemoryUsage());
+            double mem_usage = monitor_.GetMemoryUsage();
+            
+            double cpu = monitor_.GetCpuUsage();
+            double mem = monitor_.GetMemoryUsage();
+            
+            cpu_samples.push_back(cpu);
+            mem_samples.push_back(mem);
+
+            // Watchdog Check
+            if (config.memory_limit_mb > 0 && mem > config.memory_limit_mb) {
+                std::cerr << "\n[Watchdog] OOM Detected! Current: " << mem 
+                          << " MB > Limit: " << config.memory_limit_mb << " MB. Stopping..." << std::endl;
+                monitor_running = false;
+                // Force stop all requests
+                remaining_requests = 0;
+            }
+
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
     });
@@ -1168,5 +563,522 @@ double BenchmarkRunner::CalculatePercentile(std::vector<double>& latencies, doub
 }
 
 
---- 文件结束: src\BenchmarkRunner.cpp ---
+==================================================
+File: src/SystemMonitor.cpp
+==================================================
+#include "SystemMonitor.h"
+#include <fstream>
+#include <sstream>
+#include <iostream>
+#include <unistd.h>
+
+double SystemMonitor::GetMemoryUsage() {
+    // 打开当前进程的状态文件 /proc/self/stat
+    std::ifstream stat_file("/proc/self/stat");
+    if (!stat_file.is_open()) {
+        return 0.0;
+    }
+
+    std::string field;
+    // /proc/[pid]/stat 文件中第 24 个字段是 rss (Resident Set Size)
+    // 它表示进程当前占用的物理内存页数。我们需要跳过前 23 个字段。
+    for (int i = 0; i < 24; ++i) {
+        if (!(stat_file >> field)) {
+            return 0.0;
+        }
+    }
+
+    // 将第 24 个字段（rss 页数）转换为长整型
+    long rss = std::stol(field);
+    // 获取系统的内存页大小（通过 sysconf 获取，通常为 4096 字节）
+    long page_size = sysconf(_SC_PAGESIZE);
+    
+    // 计算总内存使用量（字节）并转换为 MB
+    // 计算公式：(页数 * 每页字节数) / (1024 * 1024)
+    return (static_cast<double>(rss) * page_size) / (1024.0 * 1024.0);
+}
+
+double SystemMonitor::GetCpuUsage() {
+    // 加锁，防止多线程同时修改 last_total_cpu_time_ 等状态
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    // 1. 打开 /proc/stat 文件，这是全局 CPU 状态
+    std::ifstream stat_file("/proc/stat");
+    if (!stat_file.is_open()) {
+        return 0.0;
+    }
+
+    std::string line;
+    std::getline(stat_file, line); // 读取第一行，通常以 "cpu " 开头，代表总 CPU
+
+    std::istringstream iss(line);
+    std::string cpu_label;
+    iss >> cpu_label; // 跳过 "cpu" 字符串
+
+    // 2. 读取各个时间片数据
+    // Linux 内核文档定义了这些字段顺序：user, nice, system, idle, iowait, irq, softirq, steal, guest, guest_nice
+    int64_t user, nice, system, idle, iowait, irq, softirq, steal;
+    
+    // 只读取前 8 个字段通常足够计算
+    if (!(iss >> user >> nice >> system >> idle >> iowait >> irq >> softirq >> steal)) {
+        return 0.0;
+    }
+
+    // 3. 计算 Total 和 Idle
+    // Idle 时间 = idle + iowait
+    // Total 时间 = user + nice + system + idle + iowait + irq + softirq + steal
+    int64_t current_idle = idle + iowait;
+    int64_t current_total = user + nice + system + idle + iowait + irq + softirq + steal;
+
+    // 4. 计算与上一次读数的差值 (Delta)
+    int64_t total_delta = current_total - last_total_cpu_time_;
+    int64_t idle_delta = current_idle - last_idle_cpu_time_;
+
+    // 5. 更新状态以备下次使用
+    last_total_cpu_time_ = current_total;
+    last_idle_cpu_time_ = current_idle;
+
+    // 防止除以零（通常也是处理第一次运行的情况）
+    if (total_delta <= 0) {
+        return 0.0;
+    }
+
+    // 6. 计算使用率
+    // 这里的逻辑反向思考：使用率 = 1.0 - 空闲率
+    double usage = 100.0 * (1.0 - static_cast<double>(idle_delta) / static_cast<double>(total_delta));
+    return usage < 0 ? 0 : usage;
+}
+
+bool SystemMonitor::CheckMemoryLimit(double limit_mb) {
+    if (limit_mb <= 0) {
+        return false; // 0 or negative means no limit
+    }
+    double current_usage = GetMemoryUsage();
+    return current_usage > limit_mb;
+}
+
+
+==================================================
+File: include/InferenceEngine.h
+==================================================
+#pragma once
+
+#include <string>
+#include <vector>
+#include <memory>
+#include <onnxruntime_cxx_api.h>
+
+/**
+ * @brief 推理引擎类，封装 ONNX Runtime 的核心功能。
+ * 
+ * 负责模型的加载、Tensor 内存管理以及执行推理。
+ */
+class InferenceEngine {
+public:
+    InferenceEngine();
+    ~InferenceEngine();
+
+    /**
+     * @brief 加载 ONNX 模型。
+     * 
+     * @param model_path 模型文件的路径 (.onnx)。
+     * @param opt_level 优化级别 (0=Disable, 1=Basic, 99=All). Default: 99.
+     * @throws std::runtime_error 如果加载失败。
+     */
+    void LoadModel(const std::string& model_path, int opt_level = 99);
+
+    /**
+     * @brief 执行推理。
+     * 
+     * @param input_data 输入数据（展平的 float 数组）。
+     * @return std::vector<float> 推理结果（展平的 float 数组）。
+     */
+    std::vector<float> Run(const std::vector<float>& input_data);
+
+    /**
+     * @brief 获取模型需要的输入 Tensor 元素总数。
+     * 
+     * 用于生成符合大小的随机测试数据。
+     * 
+     * @return int64_t 元素个数 (如 1x3x224x224 = 150528)。
+     */
+    int64_t GetInputSize() const;
+
+private:
+    // ONNX Runtime 环境，整个进程通常只需要一个
+    Ort::Env env_;
+    // 会话对象，非线程安全（但在 Run 时只读模型是安全的，如果包含状态则需注意）
+    // 为了更安全的并发，通常 session 是线程安全的，但 session options 不是。
+    std::unique_ptr<Ort::Session> session_;
+    
+    // 模型的元数据 (Metadata)
+    std::vector<const char*> input_node_names_;
+    std::vector<const char*> output_node_names_;
+    std::vector<int64_t> input_node_dims_;
+    size_t input_tensor_size_ = 0;
+};
+
+
+==================================================
+File: include/BenchmarkRunner.h
+==================================================
+#pragma once
+
+#include "InferenceEngine.h"
+#include "SystemMonitor.h"
+#include <vector>
+#include <cstdint>
+
+/**
+ * @brief 压测配置参数
+ */
+struct BenchmarkConfig {
+    int threads = 1;        ///< 并发线程数
+    int requests = 100;     ///< 总请求数
+    int warmup_rounds = 10; ///< 预热轮数（不计入统计）
+    double memory_limit_mb = 0.0; ///< 内存限制 (MB)，0 表示不限制
+};
+
+/**
+ * @brief 压测结果统计
+ */
+struct BenchmarkResult {
+    double qps = 0.0;            ///< 吞吐量 (Queries Per Second)
+    double avg_latency_ms = 0.0; ///< 平均延迟 (毫秒)
+    double p99_latency_ms = 0.0; ///< P99 延迟 (毫秒)
+    double avg_cpu_usage = 0.0;  ///< 平均 CPU 使用率 (%)
+    double peak_memory_mb = 0.0; ///< 峰值内存占用 (MB)
+};
+
+/**
+ * @brief 压测核心调度器
+ * 
+ * 负责管理线程池、分发推理任务、收集性能数据以及控制系统监控。
+ * 采用“抢单模式”进行负载均衡。
+ */
+class BenchmarkRunner {
+public:
+    /**
+     * @brief 构造函数
+     * 
+     * @param engine 依赖的推理引擎 (引用，生命周期需长于 Runner)
+     * @param monitor 依赖的系统监控器 (引用，生命周期需长于 Runner)
+     */
+    BenchmarkRunner(InferenceEngine& engine, SystemMonitor& monitor);
+    ~BenchmarkRunner() = default;
+
+    /**
+     * @brief 执行压测
+     * 
+     * 此函数是阻塞的，直到所有请求完成。
+     * 
+     * @param config 压测配置
+     * @return BenchmarkResult 最终统计结果
+     */
+    BenchmarkResult Run(const BenchmarkConfig& config);
+
+private:
+    InferenceEngine& engine_;
+    SystemMonitor& monitor_;
+
+    /**
+     * @brief 计算延迟的百分位数
+     * 
+     * @param latencies 所有样本数据
+     * @param percentile 百分位 (e.g. 0.99)
+     * @return double 对应的延迟值
+     */
+    double CalculatePercentile(std::vector<double>& latencies, double percentile);
+};
+
+
+==================================================
+File: include/SystemMonitor.h
+==================================================
+#pragma once
+
+#include <string>
+#include <cstdint>
+#include <mutex>
+
+/**
+ * @brief 负责监控系统资源（CPU 和 内存）
+ * 
+ * 这是一个工具类，直接读取 Linux 的 /proc 文件系统。
+ */
+class SystemMonitor {
+public:
+    SystemMonitor() = default;
+    ~SystemMonitor() = default;
+
+    /**
+     * @brief 获取当前进程的物理内存占用 (RSS)
+     * @return 占用内存大小，单位：MB
+     */
+    double GetMemoryUsage();
+
+    /**
+     * @brief 获取系统的整体 CPU 使用率
+     * 
+     * 注意：这是一个瞬时值计算。
+     * 由于 /proc/stat 存储的是累加值，我们需要维护上一次的读数，
+     * 计算 (Current - Last) 的差值来得出这段时间内的使用率。
+     * 
+     * @return CPU 使用率百分比 (0.0 - 100.0)
+     */
+    double GetCpuUsage();
+
+    /**
+     * @brief 检查内存是否超过限制 (资源熔断)
+     * 
+     * @param limit_mb 内存限制阈值 (MB)
+     * @return true 如果当前 RSS 超过 limit_mb
+     * @return false 如果未超过或 limit_mb <= 0
+     */
+    bool CheckMemoryLimit(double limit_mb);
+
+private:
+    // 记录上一次读取的 CPU 时间片总和
+    int64_t last_total_cpu_time_ = 0;
+    // 记录上一次读取的 CPU 空闲时间
+    int64_t last_idle_cpu_time_ = 0;
+    // 互斥锁，保证多线程访问安全
+    std::mutex mutex_;
+};
+
+
+==================================================
+File: scripts/benchmark_suite.py
+==================================================
+#!/usr/bin/env python3
+import subprocess
+import json
+import matplotlib.pyplot as plt
+import os
+import argparse
+import sys
+
+def run_benchmark(executable, model, threads, requests, warmup):
+    """Run inferbench and return the result dictionary."""
+    output_json = f"result_t{threads}.json"
+    cmd = [
+        executable,
+        "--model", model,
+        "--threads", str(threads),
+        "--requests", str(requests),
+        "--warmup", str(warmup),
+        "--json", output_json,
+        "--optimization", "all" # Ensure best performance
+    ]
+    
+    print(f"Running: {' '.join(cmd)}")
+    try:
+        subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except subprocess.CalledProcessError as e:
+        print(f"Error running benchmark: {e.stderr.decode()}")
+        return None
+
+    if not os.path.exists(output_json):
+        print(f"Error: {output_json} not generated.")
+        return None
+
+    with open(output_json, 'r') as f:
+        data = json.load(f)
+    
+    # Cleanup
+    os.remove(output_json)
+    return data['result']
+
+def plot_results(threads_list, qps_list, lat_list, output_dir):
+    """Generate QPS and Latency plots."""
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    # 1. Throughput (QPS)
+    plt.figure(figsize=(10, 6))
+    plt.plot(threads_list, qps_list, marker='o', linewidth=2, color='#28a745')
+    plt.title('Throughput vs Threads')
+    plt.xlabel('Threads')
+    plt.ylabel('QPS (Queries Per Second)')
+    plt.grid(True, linestyle='--', alpha=0.7)
+    for x, y in zip(threads_list, qps_list):
+        plt.text(x, y, f'{y:.1f}', ha='center', va='bottom')
+    plt.savefig(os.path.join(output_dir, 'throughput.png'))
+    plt.close()
+
+    # 2. Latency
+    plt.figure(figsize=(10, 6))
+    plt.plot(threads_list, lat_list, marker='s', linewidth=2, color='#dc3545')
+    plt.title('Average Latency vs Threads')
+    plt.xlabel('Threads')
+    plt.ylabel('Latency (ms)')
+    plt.grid(True, linestyle='--', alpha=0.7)
+    for x, y in zip(threads_list, lat_list):
+        plt.text(x, y, f'{y:.1f}', ha='center', va='bottom')
+    plt.savefig(os.path.join(output_dir, 'latency.png'))
+    plt.close()
+    
+    print(f"Plots saved to {output_dir}/")
+
+def main():
+    parser = argparse.ArgumentParser(description="InferBench Automation Suite")
+    parser.add_argument("--bin", default="./build/bin/inferbench", help="Path to inferbench executable")
+    parser.add_argument("--model", required=True, help="Path to ONNX model")
+    parser.add_argument("--requests", type=int, default=100, help="Requests per thread")
+    args = parser.parse_args()
+
+    if not os.path.exists(args.bin):
+        print(f"Error: Executable {args.bin} not found.")
+        sys.exit(1)
+        
+    if not os.path.exists(args.model):
+        print(f"Error: Model {args.model} not found.")
+        sys.exit(1)
+
+    threads_config = [1, 2, 4, 8, 16]
+    results_qps = []
+    results_lat = []
+
+    print("=== Starting Benchmark Suite ===")
+    
+    for t in threads_config:
+        # Scale requests with threads to keep load sufficient, or keep per-thread constant?
+        # Runner logic: total requests are distributed.
+        # Let's keep total requests proportional to threads to ensure longer running time?
+        # Or simple constant total requests? 
+        # For meaningful throughput test, total requests should be large.
+        # Let's use user arg --requests as "requests per thread" roughly
+        total_reqs = args.requests * t
+        
+        res = run_benchmark(args.bin, args.model, t, total_reqs, warmup=10)
+        if res:
+            results_qps.append(res['qps'])
+            results_lat.append(res['avg_latency_ms'])
+            print(f"  [Threads: {t}] QPS: {res['qps']:.2f}, Latency: {res['avg_latency_ms']:.2f} ms")
+        else:
+            print(f"  [Threads: {t}] Failed")
+            results_qps.append(0)
+            results_lat.append(0)
+
+    plot_results(threads_config, results_qps, results_lat, ".")
+
+if __name__ == "__main__":
+    main()
+
+
+==================================================
+File: scripts/mem_check.sh
+==================================================
+#!/bin/bash
+set -e
+
+echo "=== Memory Safety Check (ASan) ==="
+
+# 1. Clean and Rebuild with ASan
+echo "[Build] Compiling with AddressSanitizer..."
+rm -rf build_asan
+mkdir -p build_asan
+cd build_asan
+cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_ASAN=ON ..
+make -j$(nproc)
+
+# 2. Run Unit Tests
+echo "[Test] Running Unit Tests..."
+./bin/unit_tests
+
+# 3. Run Benchmark (Integration Test)
+# Use a small number of requests just to check for leaks during execution
+echo "[Test] Running InferenceEngine Integration..."
+# Assuming we have the test model available
+MODEL_PATH="../tests/resnet50.onnx"
+if [ ! -f "$MODEL_PATH" ]; then
+    echo "Warning: Test model not found at $MODEL_PATH, skipping integration run."
+else
+    # Run with leak check enabled (ASan default)
+    # We add export ASAN_OPTIONS=detect_leaks=1 just to be explicit, though usually default on Linux x86_64
+    export ASAN_OPTIONS=detect_leaks=1:symbolize=1
+    ./bin/inferbench --model "$MODEL_PATH" --requests 10 --threads 2 --optimization basic
+fi
+
+echo "=== Memory Check Passed! ==="
+
+
+==================================================
+File: cmake/arm-linux.toolchain.cmake
+==================================================
+# CMake Cross-Compilation Toolchain for ARM Linux
+# Usage: cmake -DCMAKE_TOOLCHAIN_FILE=../cmake/arm-linux.toolchain.cmake ..
+
+set(CMAKE_SYSTEM_NAME Linux)
+set(CMAKE_SYSTEM_PROCESSOR aarch64)
+
+# Set the cross compiler
+# Ensure these are in your PATH or set absolute paths
+set(CMAKE_C_COMPILER aarch64-linux-gnu-gcc)
+set(CMAKE_CXX_COMPILER aarch64-linux-gnu-g++)
+
+# Target environment root
+set(CMAKE_FIND_ROOT_PATH /usr/aarch64-linux-gnu)
+
+# Search for programs in the build host directories
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+
+# Search for libraries and headers in the target directories
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+
+# Optimization flags for ARM64
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=armv8-a -mtune=cortex-a53")
+
+
+==================================================
+File: .github/workflows/ci.yml
+==================================================
+name: InferBench CI
+
+on:
+  push:
+    branches: [ "main", "feature/*" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y python3-pip python3-matplotlib
+
+    - name: Download ONNX Runtime
+      run: |
+        # Download prebuilt Linux x64 ONNX Runtime
+        wget https://github.com/microsoft/onnxruntime/releases/download/v1.16.3/onnxruntime-linux-x64-1.16.3.tgz
+        tar xzf onnxruntime-linux-x64-1.16.3.tgz
+        mkdir -p third_party/onnxruntime
+        cp -r onnxruntime-linux-x64-1.16.3/* third_party/onnxruntime/
+
+    - name: Configure CMake
+      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build
+      run: cmake --build build
+
+    - name: Run Units Tests
+      run: |
+        cd build
+        ctest --output-on-failure
+        
+    - name: Test Watchdog (Memory Limit)
+      run: |
+        # Just ensure binary runs and argument works
+        ./build/bin/inferbench --help | grep memory_limit
+
+    - name: Check F3 Automation Script Syntax
+      run: |
+        python3 -m py_compile scripts/benchmark_suite.py
 

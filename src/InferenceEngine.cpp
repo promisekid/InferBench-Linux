@@ -19,6 +19,13 @@ InferenceEngine::~InferenceEngine() {
 }
 
 void InferenceEngine::LoadModel(const std::string& model_path, int opt_level) {
+    // Clear previous model resources if any
+    for (auto name : input_node_names_) free(const_cast<char*>(name));
+    for (auto name : output_node_names_) free(const_cast<char*>(name));
+    input_node_names_.clear();
+    output_node_names_.clear();
+    input_node_dims_.clear();
+
     Ort::SessionOptions session_options;
     
     // Set Optimization Level
