@@ -155,9 +155,11 @@ cd build
 
 **可视化效果示例:**
 
-> (此处为自动生成，运行脚本后查看当前目录)
-> - **Throughput Chart**: 绿色曲线，越高越好。
-> - **Latency Chart**: 红色曲线，越低越好。
+### Throughput (QPS) vs Threads
+![Throughput Chart](throughput.png)
+
+### Latency (ms) vs Threads
+![Latency Chart](latency.png)
 
 ## 📄 License
 
