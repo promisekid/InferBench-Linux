@@ -2,11 +2,13 @@
 build/
 bin/
 lib/
+build_asan/
 
 # IDE settings
 .vscode/
 .idea/
 *.swp
+*.png
 
 # Compiled Object files
 *.o

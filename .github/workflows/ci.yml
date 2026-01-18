@@ -1,0 +1,47 @@
+name: InferBench CI
+
+on:
+  push:
+    branches: [ "main", "feature/*" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y python3-pip python3-matplotlib
+
+    - name: Download ONNX Runtime
+      run: |
+        # Download prebuilt Linux x64 ONNX Runtime
+        wget https://github.com/microsoft/onnxruntime/releases/download/v1.16.3/onnxruntime-linux-x64-1.16.3.tgz
+        tar xzf onnxruntime-linux-x64-1.16.3.tgz
+        mkdir -p third_party/onnxruntime
+        cp -r onnxruntime-linux-x64-1.16.3/* third_party/onnxruntime/
+
+    - name: Configure CMake
+      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build
+      run: cmake --build build
+
+    - name: Run Units Tests
+      run: |
+        cd build
+        ctest --output-on-failure
+        
+    - name: Test Watchdog (Memory Limit)
+      run: |
+        # Just ensure binary runs and argument works
+        ./build/bin/inferbench --help | grep memory_limit
+
+    - name: Check F3 Automation Script Syntax
+      run: |
+        python3 -m py_compile scripts/benchmark_suite.py

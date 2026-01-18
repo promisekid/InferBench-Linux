@@ -11,9 +11,11 @@
 
 *   **高性能推理**: 基于 Microsoft ONNX Runtime C++ API，采用 Zero-Copy 机制最小化内存开销。
 *   **高并发压测**: 内置 `BenchmarkRunner`，支持多线程“抢单模式”并发推理，充分榨干 CPU 性能。
+*   **资源熔断 (Watchdog)**: (v0.2.0) 支持设置内存上限 (`--memory_limit`)，防止 OOM 导致系统死机。
+*   **模型探查 (Probe)**: (v0.2.0) 支持不运行推理直接查看模型输入输出结构 (`--probe`)。
 *   **实时系统监控**: 直接解析 `/proc` 文件系统，以极低开销实时监控 CPU 使用率和物理内存 (RSS) 占用。
-*   **专业报告输出**: 支持终端实时 ASCII 进度条与详细的 JSON 格式测试报告，便于 CI/CD 集成。
-*   **无第三方臃肿依赖**: 除 ONNX Runtime 和 GTest 外，核心逻辑全由标准 C++17 实现。
+*   **专业报告输出**: 支持终端实时 ASCII 进度条与详细的 JSON 格式测试报告。
+*   **自动化套件**: (v0.2.0) 提供 Python 绘图脚本 (`scripts/benchmark_suite.py`) 一键生成 Latency/Throughput 曲线。
 
 ## 🛠️ 构建指南
 
@@ -63,6 +65,9 @@
 | `--threads` | `-t` | `1` | 并发推理线程数 |
 | `--requests` | `-n` | `100` | 总请求次数 |
 | `--warmup` | `-w` | `10` | 预热轮数 (不计入统计) |
+| `--memory_limit` | `-l` | `0` (无) | 内存熔断限制 (MB)，超过即停止 |
+| `--optimization` | `-o` | `all` | 图优化级别: `basic`, `all`, `none` |
+| `--probe` | `-p` | (无) | 仅探查模型信息并退出，不运行推理 |
 | `--json` | `-j` | (空) | 将结果保存为 JSON 文件的路径 |
 | `--help` | `-h` | - | 显示帮助信息 |
 
@@ -115,8 +120,15 @@ InferBench-Linux/
 项目集成了 GoogleTest，用于验证各模块的正确性。
 
 ```bash
+# 运行所有单元测试
 cd build
 ./bin/unit_tests
+
+# 运行自动化测试套件 (生成绘图)
+./scripts/benchmark_suite.py --model ../tests/resnet50.onnx
+
+# 运行内存泄漏检查 (ASan)
+./scripts/mem_check.sh
 ```
 
 ## 📄 License

@@ -10,6 +10,15 @@ set(CMAKE_CXX_STANDARD 17)
 # 强制要求编译器支持所选的 C++ 标准
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# --- AddressSanitizer (ASan) Configuration ---
+option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
+if(ENABLE_ASAN)
+    message(STATUS "AddressSanitizer Enabled")
+    add_compile_options(-fsanitize=address -fno-omit-frame-pointer -g)
+    add_link_options(-fsanitize=address)
+endif()
+# ---------------------------------------------
+
 # 设置编译产物的输出目录
 # 设置静态库（.a）的输出目录
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -37,7 +46,6 @@ FetchContent_MakeAvailable(googletest)
 # -----------------------------
 
 # 查找所有源文件 
-# file(GLOB...) 在工程变大时不是最佳实践，但 MVP 阶段为了方便先保留，或者手动列出
 set(SOURCES
     src/test_ort.cpp
     src/SystemMonitor.cpp

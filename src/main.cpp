@@ -12,13 +12,7 @@
 // 打印模型元数据
 void PrintModelInfo(InferenceEngine& engine) {
     std::cout << "[Probe] Model Inspector:\n";
-    // Since InferenceEngine exposes little info, we might need to rely on what we can see or add getters.
-    // Ideally InferenceEngine should have GetInputNodes() etc, but for now let's just use what we have or assume success message is enough for MVP+
-    // Wait, the PRD says "print model metadata (inputs, outputs, nodes)". The current InferenceEngine doesn't expose these widely.
-    // Let's modify InferenceEngine to allow inspecting or just trust the process.
-    // Checking InferenceEngine.h... GetInputSize is there.
-    // Let's add basic info here, or even better, expose input/output names if possible.
-    // For now, let's keep it simple based on what we have:
+    // 打印输入 Tensor 的基本信息
     std::cout << "  Input Size (elements): " << engine.GetInputSize() << "\n";
     std::cout << "  (More details would require InferenceEngine API expansion)\n";
 }

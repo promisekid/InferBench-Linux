@@ -33,7 +33,6 @@ BenchmarkResult BenchmarkRunner::Run(const BenchmarkConfig& config) {
     std::mutex stats_mutex; // 仅用于最后合并数据
     
     // Per-thread statistics to avoid lock verify
-    // 这种做法叫 TLS (Thread Local Storage) 思想的手动实现
     std::vector<std::vector<double>> all_thread_latencies(config.threads);
 
     // 4. 启动系统监控线程
@@ -43,9 +42,7 @@ BenchmarkResult BenchmarkRunner::Run(const BenchmarkConfig& config) {
     
     std::thread monitor_thread([&]() {
         while (monitor_running) {
-            double mem_usage = monitor_.GetCpuUsage(); // Keep CPU check
-            // Fix: GetCpuUsage returns CPU, we need GetMemoryUsage for memory
-            // Re-reading logic to be precise
+            double mem_usage = monitor_.GetMemoryUsage();
             
             double cpu = monitor_.GetCpuUsage();
             double mem = monitor_.GetMemoryUsage();

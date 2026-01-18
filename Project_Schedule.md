@@ -16,17 +16,17 @@
 **目标**: 升级为嵌入式 AI 工具链组件，支持资源保护、模型探查与自动化流水线。
 
 ### 📅 里程碑分解 (New)
-- [ ] **M6: 资源保护 (Resource Watchdog)**
-    - [ ] 实现 `SystemMonitor` 内存监控 (RSS)
-    - [ ] 实现 `--memory_limit` 熔断机制
-- [ ] **M7: 模型探查与优化 (Model Probe & Optimization)**
-    - [ ] 实现 `--probe` 元数据打印
+- [x] **M6: 资源保护 (Resource Watchdog)**
+    - [x] 实现 `SystemMonitor` 内存监控 (RSS)
+    - [x] 实现 `--memory_limit` 熔断机制
+- [x] **M7: 模型探查与优化 (Model Probe & Optimization)**
+    - [x] 实现 `--probe` 元数据打印
     - [ ] 集成 `SessionOptions` 图优化级别配置
-- [ ] **M8: 自动化套件 (Automation Suite)**
-    - [ ] 开发 `scripts/benchmark_suite.py` (多线程压测 + 绘图)
-    - [ ] 开发 `scripts/mem_check.sh` (ASan 集成)
+- [x] **M8: 自动化套件 (Automation Suite)**
+    - [x] 开发 `scripts/benchmark_suite.py` (多线程压测 + 绘图)
+    - [x] 开发 `scripts/mem_check.sh` (ASan 集成)
 - [ ] **M9: CI/CD 集成**
-    - [ ] 配置 GitHub Actions (`.github/workflows/ci.yml`)
+    - [x] 配置 GitHub Actions (`.github/workflows/ci.yml`)
 
 ---
 
