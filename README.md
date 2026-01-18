@@ -11,11 +11,11 @@
 
 *   **高性能推理**: 基于 Microsoft ONNX Runtime C++ API，采用 Zero-Copy 机制最小化内存开销。
 *   **高并发压测**: 内置 `BenchmarkRunner`，支持多线程“抢单模式”并发推理，充分榨干 CPU 性能。
-*   **资源熔断 (Watchdog)**: (v0.2.0) 支持设置内存上限 (`--memory_limit`)，防止 OOM 导致系统死机。
-*   **模型探查 (Probe)**: (v0.2.0) 支持不运行推理直接查看模型输入输出结构 (`--probe`)。
+*   **资源熔断 (Watchdog)**: 支持设置内存上限 (`--memory_limit`)，防止 OOM 导致系统死机。
+*   **模型探查 (Probe)**: 支持不运行推理直接查看模型输入输出结构 (`--probe`)。
 *   **实时系统监控**: 直接解析 `/proc` 文件系统，以极低开销实时监控 CPU 使用率和物理内存 (RSS) 占用。
 *   **专业报告输出**: 支持终端实时 ASCII 进度条与详细的 JSON 格式测试报告。
-*   **自动化套件**: (v0.2.0) 提供 Python 绘图脚本 (`scripts/benchmark_suite.py`)，一键运行多线程压测并生成 Latency/Throughput 性能曲线图。
+*   **自动化套件**: 提供 Python 绘图脚本 (`scripts/benchmark_suite.py`)，一键运行多线程压测并生成 Latency/Throughput 性能曲线图。
 *   **可视化图表**: 自动生成 `throughput.png` (QPS vs Threads) 和 `latency.png` (Latency vs Threads) 以便直观分析扩展性。
 
 ## 🛠️ 构建指南
@@ -84,7 +84,7 @@
 
 ```text
 ========================================
- InferBench-Linux v0.1.0 
+ InferBench-Linux 
 ========================================
 Model: ../tests/resnet50.onnx
 Threads: 4
@@ -132,9 +132,9 @@ cd build
 ./scripts/mem_check.sh
 ```
 
-### 📊 自动化压测与可视化 (v0.2.0 新增)
+### 📊 自动化压测与可视化
 
-`scripts/benchmark_suite.py` 是 v0.2.0 引入的强大工具，它可以自动执行一系列不同线程数（默认 1, 2, 4, 8, 16）的基准测试，并生成直观的性能图表。
+`scripts/benchmark_suite.py` 是一个强大的工具，它可以自动执行一系列不同线程数（默认 1, 2, 4, 8, 16）的基准测试，并生成直观的性能图表。
 
 **使用方法:**
 
