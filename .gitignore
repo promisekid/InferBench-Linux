@@ -7,8 +7,9 @@ build_asan/
 # IDE settings
 .vscode/
 .idea/
-*.swp
+*.json
 *.png
+output.txt
 
 # Compiled Object files
 *.o
